@@ -1,8 +1,8 @@
 import java.io.*;
 public class Activity {
    public static void main(String[] args) throws IOException {
-       new Activity().onCreate();
-    }
+      new Activity().onCreate();
+   }
    public Activity() {
    }
    public void onCreate() {
