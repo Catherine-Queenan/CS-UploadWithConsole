@@ -15,9 +15,9 @@ public class UploadServlet {
          out.println("<html><body>");
          out.println("<h1>File Upload Form</h1>");
          out.println("<form method='POST' enctype='multipart/form-data' action=\"http://localhost:8082\">");
-         out.println("Caption: <input type=\"text\" name=\"caption\"/>");
-         out.println("Date: <input type=\"date\" name=\"date\" />");
-         out.println("<input type=\"file\" name=\"fileName\"/>");
+         out.println("Caption: <input type=\"text\" name=\"caption\"/><br><br>");
+         out.println("Date: <input type=\"date\" name=\"date\" /><br><br>");
+         out.println("<input type=\"file\" name=\"fileName\"/><br><br>");
          out.println("<input type=\"submit\" value=\"Submit\" />");
          out.println("</form>");
          out.println("</body></html>");
