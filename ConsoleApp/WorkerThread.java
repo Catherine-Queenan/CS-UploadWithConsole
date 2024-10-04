@@ -4,8 +4,7 @@ public class WorkerThread extends Thread {
       this.aTask = asyncTask;
    }
    public void run() {
-       String result = aTask.doInBackground();
-       aTask.onPostExecute(result);
-       
+      String result = aTask.doInBackground();
+      aTask.onPostExecute(result);
    }
 }
