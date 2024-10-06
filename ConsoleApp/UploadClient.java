@@ -39,18 +39,19 @@ public class UploadClient {
 
             // HTTP Post Body
             StringBuilder body = new StringBuilder();
-body.append("--").append(boundary).append("\r\n")
-    .append("Content-Disposition: form-data; name=\"caption\"\r\n\r\n")
-    .append(caption).append("\r\n")
-    .append("--").append(boundary).append("\r\n")
-    .append("Content-Disposition: form-data; name=\"date\"\r\n\r\n")
-    .append(date).append("\r\n")
-    .append("--").append(boundary).append("\r\n")
-    .append("Content-Disposition: form-data; name=\"File\"; filename=\"")
-    // Extract filename from filePath
-    .append(new File(filePath).getName()).append("\"\r\n")
-    .append("Content-Type: ").append(Files.probeContentType(new File(filePath).toPath())).append("\r\n\r\n");
-;
+            body.append("--").append(boundary).append("\r\n")
+            .append("Content-Disposition: form-data; name=\"caption\"\r\n\r\n")
+            .append(caption).append("\r\n")
+            .append("--").append(boundary).append("\r\n")
+            .append("Content-Disposition: form-data; name=\"date\"\r\n\r\n")
+            .append(date).append("\r\n")
+            .append("--").append(boundary).append("\r\n")
+            .append("Content-Disposition: form-data; name=\"File\"; filename=\"")
+            
+            // Extract filename from filePath
+            .append(new File(filePath).getName()).append("\"\r\n")
+            .append("Content-Type: ").append(Files.probeContentType(new File(filePath).toPath())).append("\r\n\r\n");
+            
 
             // Read the file into a byte array
             FileInputStream fis = new FileInputStream(filePath);
@@ -60,7 +61,7 @@ body.append("--").append(boundary).append("\r\n")
             // Final boundary
             String endBoundary = "\r\n--" + boundary + "--\r\n";
 
-            // Calculate the content length (header + body + file + final boundary)
+            // Calculate the content length
             int contentLength = body.length() + fileBytes.length + endBoundary.length();
             request += contentLength + "\r\n\r\n";
 
