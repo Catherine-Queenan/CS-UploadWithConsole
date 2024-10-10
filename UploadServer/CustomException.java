@@ -17,6 +17,7 @@ class MethodNotFoundException extends Exception {
         super(errorMessage, err);
     }
 }
+
 // To create a custom unchecked exception
 class ServletInvocationException extends RuntimeException {
     public ServletInvocationException(String errorMessage, Throwable err) {
