@@ -1,5 +1,6 @@
 import java.io.*;
 import java.lang.reflect.*;
+import java.util.Arrays;
 
 public class UploadServlet {
 
@@ -97,23 +98,41 @@ public class UploadServlet {
 
          // Save uploaded file with a timestamped name
          long timestamp = System.currentTimeMillis();
-         FileOutputStream fos = new FileOutputStream(new File(timestamp + ".html"));
-         baos.writeTo(fos);
-         fos.close();
+         String filename = timestamp + ".html";
+         try (FileOutputStream fos = new FileOutputStream(new File(filename))) {
+            baos.writeTo(fos);
+            fos.close();
+         }
 
          // Send response showing the list of files in the directory
+         response.setContentType("text/html");
          PrintWriter out = response.getWriter();
-         File dir = new File(".");
-         String[] files = dir.list();
-         out.println("<html><body><h2>Uploaded Files:</h2><ul>");
-         for (String file : files) {
-            out.println("<li>" + file + "</li>");
-         }
-         out.println("</ul></body></html>");
+         String header = "<!Doctype html><html><head><title>Uploaded Files</title></head><body><ul>";
+         String footer = "</ul></body></html>";
+         out.println(header + getFilesList() + footer);
          out.flush();
 
       } catch (Exception ex) {
          ex.printStackTrace();
       }
+   }
+
+   // Helper method to get the list of files in the directory
+   private String getFilesList() {
+      StringBuilder filesList = new StringBuilder();
+      File dir = new File(".");
+      String[] files = dir.list();
+      
+      if (files != null) {
+         Arrays.sort(files);
+         for (String file : files) {
+            filesList.append("<li>");
+            if (file.endsWith(".jpg") || file.endsWith(".png") || file.endsWith(".gif")) {
+               filesList.append("<img src='").append(file).append("' width='100' height='100'/>");
+            }
+            filesList.append(file).append("</li>");
+         }
+      }
+      return filesList.toString();
    }
 }
