@@ -17,6 +17,7 @@ public class HttpServletResponse {
       writer.println("HTTP/1.1 200 OK");
       writer.println("Content-Type: " + contentType);
       writer.println(); // Blank line to indicate end of headers
+      
    }
 
    // Simulate getting the writer for the response

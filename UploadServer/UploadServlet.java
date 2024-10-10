@@ -1,8 +1,9 @@
 import java.io.*;
 
-public class UploadServlet {
+public class UploadServlet extends HttpServlet {
 
    // Handle GET request to serve the HTML form
+   @Override
    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
       try {
          // Set content type to HTML
@@ -31,19 +32,34 @@ public class UploadServlet {
    }
 
    // Handle POST request to process the file upload
+   @Override
    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
       try {
          InputStream in = request.getInputStream();
+         int contentLength = request.getContentLength();
+
+         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
          ByteArrayOutputStream baos = new ByteArrayOutputStream();
-         byte[] content = new byte[1024]; // Buffer size
+         byte[] content = new byte[4]; // Buffer size
+
+
          int bytesRead;
-         while ((bytesRead = in.read(content)) != -1) {
+         int totalBytesRead = 0;      
+   
+         while (totalBytesRead < contentLength && (bytesRead = in.read(content)) != -1) {
+            String line = new String(content);  
+            System.out.println(line); 
+
             baos.write(content, 0, bytesRead);
+         
+            totalBytesRead += bytesRead;
          }
 
          // Save uploaded file with a timestamped name
          long timestamp = System.currentTimeMillis();
-         FileOutputStream fos = new FileOutputStream(new File(timestamp + ".html"));
+         System.out.println(timestamp);
+         FileOutputStream fos = new FileOutputStream(new File(timestamp + ".txt"));
          baos.writeTo(fos);
          fos.close();
 
