@@ -7,7 +7,7 @@ public class UploadServlet {
     * Using reflection to dynamically access the GET or POST method of the servlet while
     * printing updates on progress to the output stream.
     */
-   public void handleRequest(String methodName, InputStream input, OutputStream output) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+   public void handleRequest(String methodName, InputStream input, OutputStream output) throws ServletNotFoundException, MethodNotFoundException {
       // Initialize PrintWriter to send response
       try (PrintWriter out = new PrintWriter(output)) {
          // Logging to signify loading of the method and instantiation of the servlet instance dynamically
@@ -26,6 +26,16 @@ public class UploadServlet {
 
          // Sending the response
          out.flush();
+      // Using the custom exceptions to handle errors
+      } catch (ClassNotFoundException e) {
+         // Throwing a custom exceptoion for class not found
+         throw new ServletNotFoundException("The requested servlet class 'UploadServlet' could not be found.", e);
+      } catch (NoSuchMethodException e) {
+         // Throwing a custom exception for method not found
+         throw new MethodNotFoundException("The requested method '" + methodName + "' could not be found.", e);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+         // Throwing a custom unchecked exception for invocation errors (based on the suggested initial exceptions)
+         throw new ServletInvocationException("An error occurred while invoking the method '" + methodName + "'.", e);
       } catch (Exception e) {
          e.printStackTrace();
       }
