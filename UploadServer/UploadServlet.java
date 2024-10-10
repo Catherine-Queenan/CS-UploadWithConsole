@@ -1,6 +1,35 @@
 import java.io.*;
+import java.lang.reflect.*;
 
 public class UploadServlet {
+
+   /**
+    * Using reflection to dynamically access the GET or POST method of the servlet while
+    * printing updates on progress to the output stream.
+    */
+   public void handleRequest(String methodName, InputStream input, OutputStream output) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+      // Initialize PrintWriter to send response
+      try (PrintWriter out = new PrintWriter(output)) {
+         // Logging to signify loading of the method and instantiation of the servlet instance dynamically
+         out.println("Loading 'UploadServlet' class dynamically...");
+         // Load the servlet class dynamically
+         Class<?> servletClass = Class.forName("UploadServlet");
+         // Dynamically instantiating an instance
+         Object servletInstance = servletClass.getDeclaredConstructor();
+
+         // Using reflection to invoke the GET or POST method
+         Method method = servletClass.getDeclaredMethod(methodName.toLowerCase(), InputStream.class, OutputStream.class);
+         // Logging the invocation of the method
+         out.println("Invoking method '" + methodName + "' dynamically...");
+         // Invoking the method
+         method.invoke(servletInstance, input, output);
+
+         // Sending the response
+         out.flush();
+      } catch (Exception e) {
+         e.printStackTrace();
+      }
+   }
 
    // Handle GET request to serve the HTML form
    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
