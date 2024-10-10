@@ -10,7 +10,7 @@ public class UploadServer {
             System.exit(-1);
         }
         while (true) {
-	    new UploadServerThread(serverSocket.accept()).start();
+	        new UploadServerThread(serverSocket.accept()).start();
         }
     }
 }

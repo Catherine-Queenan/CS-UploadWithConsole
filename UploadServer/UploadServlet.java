@@ -18,7 +18,7 @@ public class UploadServlet extends HttpServlet {
          PrintWriter out = new PrintWriter(response.getOutputStream(), true);
          File dir = new File(".");
          String[] chld = dir.list();
-      	 for(int i = 0; i < chld.length; i++){
+      	for(int i = 0; i < chld.length; i++){
             String fileName = chld[i];
             out.println(fileName+"\n");
             System.out.println(fileName);
