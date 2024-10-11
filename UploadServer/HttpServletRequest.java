@@ -1,8 +1,16 @@
 import java.io.*;
 public class HttpServletRequest {
    private InputStream inputStream = null;
-   public HttpServletRequest(InputStream inputStream) {
-      this.inputStream = inputStream;
+   private BufferedReader in = null;
+   private OutputStream outputStream = null;
+   public HttpServletRequest(BufferedReader in, OutputStream outputStream, InputStream inputStream) {
+      this.inputStream = inputStream; 
+      this.in = in;
+      this.outputStream = outputStream;
    }
+   
    public InputStream getInputStream() {return inputStream;}
+   public BufferedReader getBufferedIn() {return in;}
+   public OutputStream getOutputStream() {return outputStream;}
+
 }
