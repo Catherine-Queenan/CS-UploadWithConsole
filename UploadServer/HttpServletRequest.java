@@ -3,7 +3,7 @@ public class HttpServletRequest {
    private InputStream inputStream = null;
    private BufferedReader in = null;
    private OutputStream outputStream = null;
-   public HttpServletRequest(BufferedReader in, OutputStream outputStream, InputStream inputStream) {
+   public HttpServletRequest(BufferedReader in, InputStream inputStream) {
       this.inputStream = inputStream; 
       this.in = in;
       this.outputStream = outputStream;
