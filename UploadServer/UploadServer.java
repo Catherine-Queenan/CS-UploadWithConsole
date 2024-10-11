@@ -31,7 +31,7 @@ public class UploadServer {
             serveForm(out);
         } else if (requestLine.startsWith("POST")) {
             // Handle POST request for file upload
-            handleFileUpload(in, out);
+            handleFileUpload(in, out, clientSocket.getInputStream());
         }
     }
 
@@ -61,49 +61,88 @@ public class UploadServer {
     }
 
     // Function to handle file upload and save the file
-    private static void handleFileUpload(BufferedReader in, OutputStream out) throws IOException {
+    private static void handleFileUpload(BufferedReader in, OutputStream out, InputStream inputStream) throws IOException {
         // Create a directory for uploaded files if it doesn't exist
         File uploadDir = new File("uploads");
         if (!uploadDir.exists()) {
             uploadDir.mkdir();
         }
 
-        // Read and process the HTTP headers
+        // Extract boundary from the content-type header
+        String boundary = "";
         String line;
         while (!(line = in.readLine()).isEmpty()) {
-            System.out.println("Header: " + line);
-        }
-
-        // Skip the form data boundary lines and headers to reach the file content
-        in.readLine(); // Skip first boundary line
-        in.readLine(); // Skip Content-Disposition header
-        in.readLine(); // Skip Content-Type header
-        in.readLine(); // Skip empty line
-
-        // Read the file content (this is simplified for smaller files)
-        StringBuilder fileContent = new StringBuilder();
-        char[] buffer = new char[1024];
-        int numRead;
-        while ((numRead = in.read(buffer)) != -1) {
-            fileContent.append(buffer, 0, numRead);
-            if (fileContent.toString().contains("--")) {
-                break; // Stop reading after the final boundary line
+            if (line.startsWith("Content-Type: multipart/form-data")) {
+                // Extract the boundary
+                int boundaryIndex = line.indexOf("boundary=");
+                if (boundaryIndex != -1) {
+                    boundary = line.substring(boundaryIndex + 9);
+                }
             }
         }
 
-        // Save the uploaded file
-        String caption = "sample";  // Extract from the form if needed
-        String date = "2024-10-10"; // Extract from the form if needed
-        String filename = caption + "_" + date + "_uploadedFile.txt"; // Customize file name
-        File uploadedFile = new File(uploadDir, filename);
+        if (boundary.isEmpty()) {
+            System.out.println("No boundary found in the request.");
+            return;
+        }
 
-        Files.write(uploadedFile.toPath(), fileContent.toString().getBytes());
+        // Parse multipart form data
+        String caption = null;
+        String date = null;
+        File uploadedFile = null;
+
+        DataInputStream dataInputStream = new DataInputStream(inputStream);
+        while (!(line = in.readLine()).contains("--" + boundary + "--")) {
+            System.out.println("Boundary: "+boundary);
+            // Read until boundary
+            if (line.contains("Content-Disposition: form-data; name=\"caption\"")) {
+                in.readLine(); // skip Content-Type or empty line
+                caption = in.readLine(); // extract caption
+                System.out.println("caption: " + caption);
+            } else if (line.contains("Content-Disposition: form-data; name=\"date\"")) {
+                in.readLine(); // skip Content-Type or empty line
+                date = in.readLine(); // extract date
+                System.out.println("date: " +date);
+            } else if (line.contains("Content-Disposition: form-data; name=\"fileName\"; filename=\"")) {
+                // Extract file name from the line
+                String fileName = line.substring(line.indexOf("filename=\"") + 10, line.length() - 1);
+                System.out.println("File name received: " + fileName);
+
+                // Skip headers
+                in.readLine(); // skip Content-Type header
+                in.readLine(); // skip empty line
+
+                // Read file content and save it
+                String fileSaveName = caption + "_" + date + "_" + fileName;
+                File file = new File(uploadDir, fileSaveName);
+                try (FileOutputStream fileOut = new FileOutputStream(file)) {
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = dataInputStream.read(buffer)) != -1) {
+                        fileOut.write(buffer, 0, bytesRead);
+                        // Stop writing at the boundary
+                        if (new String(buffer, 0, bytesRead).contains("--" + boundary)) {
+                            break;
+                        }
+                    } 
+                    System.out.println("WHILE ENDED");
+                }
+
+                uploadedFile = file;
+            }
+            // System.out.println("line: " + line);
+        }
+        dataInputStream.close();
 
         // Send response back to the client
         String response = "HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/html\r\n" +
                 "\r\n" +
-                "<html><body><h2>File uploaded successfully!</h2></body></html>";
+                "<html><body><h2>File uploaded successfully!</h2><br>" +
+                "File saved as: " + (uploadedFile != null ? uploadedFile.getName() : "No file uploaded") +
+                "<br>Caption: " + caption + "<br>Date: " + date +
+                "</body></html>";
+
         out.write(response.getBytes());
         out.flush();
     }
