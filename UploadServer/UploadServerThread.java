@@ -23,7 +23,7 @@ public class UploadServerThread extends Thread {
             return;
          }
     
-         HttpServletRequest req = new HttpServletRequest(reader, socket.getOutputStream(), in); 
+         HttpServletRequest req = new HttpServletRequest(reader, in); 
          // Set up the response output stream
          OutputStream baos = new ByteArrayOutputStream();
          HttpServletResponse res = new HttpServletResponse(baos);

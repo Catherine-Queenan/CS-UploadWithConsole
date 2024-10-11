@@ -1,5 +1,6 @@
 import java.io.*;
 import java.lang.reflect.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class UploadServlet extends HttpServlet {
@@ -99,7 +100,6 @@ public class UploadServlet extends HttpServlet {
       try {
          InputStream inputStream = request.getInputStream();
          BufferedReader in = request.getBufferedIn();
-         OutputStream out = request.getOutputStream();
 
          File uploadDir = new File("uploads");
          if (!uploadDir.exists()) {
@@ -148,30 +148,42 @@ public class UploadServlet extends HttpServlet {
                System.out.println("File name received: " + fileName);
 
                // Skip headers
-               in.readLine(); // skip Content-Type header
-               in.readLine(); // skip empty line
+               line = in.readLine(); // skip Content-Type header
+               System.out.println(line);
+               line = in.readLine(); // skip empty line
+               System.out.println(line);
+               System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 
                // Read file content and save it
                String fileSaveName = caption + "_" + date + "_" + fileName;
                File file = new File(uploadDir, fileSaveName);
-               try (FileOutputStream fileOut = new FileOutputStream(file)) {
+               try (OutputStream fileOut = new BufferedOutputStream(new FileOutputStream(file))) {
                   byte[] buffer = new byte[1024];
                   int bytesRead;
-                  String checkBuffer = "";
+                  
+                  ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                  StringBuilder checkBuffer = new StringBuilder();
+
+                  String currentContent = "";
                   while ((bytesRead = dataInputStream.read(buffer)) != -1) {
-                     fileOut.write(buffer, 0, bytesRead);
-                     checkBuffer = new String(buffer, 0, bytesRead);
-                     // Stop writing at the boundary
-                     if (checkBuffer.contains("--" + boundary)) {
-                        uploadedFile = file;
+                     // fileOut.write(buffer, 0, bytesRead);
+                     
+                     baos.write(buffer, 0, bytesRead);
+
+                     byte[] allBytes = baos.toByteArray();
+                     currentContent = new String(allBytes, 0, allBytes.length, StandardCharsets.ISO_8859_1);
+                     if (currentContent.contains("--" + boundary + "--")) {
+                        // Find the position of the boundary
+                        int boundaryIndex = currentContent.indexOf("\r\n--" + boundary + "--");
+                        // Write only up to the boundary
+                        fileOut.write(allBytes, 0, boundaryIndex);
                         break;
-                     }
+                     } 
                   }
-                  if (checkBuffer.contains("--" + boundary)) {
+                  if (currentContent.contains("--" + boundary + "--")) {
                      uploadedFile = file;
                      break;
                   }
-                  uploadedFile = file;
                }
             }
          }
@@ -179,15 +191,11 @@ public class UploadServlet extends HttpServlet {
          System.out.println("uploadedFile " + uploadedFile);
 
          // Send response back to the client
-         String responseHeader = "HTTP/1.1 200 OK\r\n" +
-               "Content-Type: text/html\r\n" +
-               "\r\n" +
-               "<html><body><h2>File uploaded successfully!</h2><br>" +
-               "File saved as: " + (uploadedFile != null ? uploadedFile.getName() : "No file uploaded") +
-               "<br>Caption: " + caption + "<br>Date: " + date +
-               "</body></html>";
-
-         out.write(responseHeader.getBytes());
+         response.setContentType("text/html");
+         PrintWriter out = response.getWriter();
+         String header = "<!Doctype html><html><head><title>Uploaded Files</title></head><body><ul>";
+         String footer = "</ul></body></html>";
+         out.println(header + getFilesList() + footer);
          out.flush();
 
       } catch (Exception ex) {
@@ -198,7 +206,7 @@ public class UploadServlet extends HttpServlet {
    // Helper method to get the list of files in the directory
    private String getFilesList() {
       StringBuilder filesList = new StringBuilder();
-      File dir = new File(".");
+      File dir = new File("./uploads");
       String[] files = dir.list();
 
       if (files != null) {
@@ -206,7 +214,7 @@ public class UploadServlet extends HttpServlet {
          for (String file : files) {
             filesList.append("<li>");
             if (file.endsWith(".jpg") || file.endsWith(".png") || file.endsWith(".gif")) {
-               filesList.append("<img src='").append(file).append("' width='100' height='100'/>");
+               filesList.append("<img src='/uploads/").append(file).append("' width='100' height='100'/>");
             }
             filesList.append(file).append("</li>");
          }
