@@ -91,9 +91,11 @@ public class UploadServer {
         String date = null;
         File uploadedFile = null;
 
+        String fileName = null;
+
         DataInputStream dataInputStream = new DataInputStream(inputStream);
         while (!(line = in.readLine()).contains("--" + boundary + "--")) {
-            System.out.println("line: "+line);
+            // System.out.println("line: "+line);
             // Read until boundary
             if (line.contains("Content-Disposition: form-data; name=\"caption\"")) {
                 in.readLine(); // skip Content-Type or empty line
@@ -105,7 +107,7 @@ public class UploadServer {
                 System.out.println("date: " +date);
             } else if (line.contains("Content-Disposition: form-data; name=\"fileName\"; filename=\"")) {
                 // Extract file name from the line
-                String fileName = line.substring(line.indexOf("filename=\"") + 10, line.length() - 1);
+                fileName = line.substring(line.indexOf("filename=\"") + 10, line.length() - 1);
                 System.out.println("File name received: " + fileName);
 
                 // Skip headers
@@ -124,19 +126,20 @@ public class UploadServer {
                         checkBuffer = new String(buffer, 0, bytesRead);
                         // Stop writing at the boundary
                         if (checkBuffer.contains("--" + boundary)) {
-                            System.out.println("checkBuffer: " + checkBuffer);
+                            uploadedFile = file;
                             break;
                         }
                     } 
                     if (checkBuffer.contains("--" + boundary)) {
-                        System.out.println("checkBuffer: " + checkBuffer);
+                        uploadedFile = file;
                         break;
                     }
-                    // System.out.println("WHILE ENDED");
+                    uploadedFile = file;
                 }
-                uploadedFile = file;
             }
         }
+
+        System.out.println("uploadedFile " + uploadedFile);
 
         // Send response back to the client
         String response = "HTTP/1.1 200 OK\r\n" +
