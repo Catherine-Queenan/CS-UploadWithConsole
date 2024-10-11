@@ -93,7 +93,7 @@ public class UploadServer {
 
         DataInputStream dataInputStream = new DataInputStream(inputStream);
         while (!(line = in.readLine()).contains("--" + boundary + "--")) {
-            System.out.println("Boundary: "+boundary);
+            System.out.println("line: "+line);
             // Read until boundary
             if (line.contains("Content-Disposition: form-data; name=\"caption\"")) {
                 in.readLine(); // skip Content-Type or empty line
@@ -118,21 +118,25 @@ public class UploadServer {
                 try (FileOutputStream fileOut = new FileOutputStream(file)) {
                     byte[] buffer = new byte[1024];
                     int bytesRead;
+                    String checkBuffer = "";
                     while ((bytesRead = dataInputStream.read(buffer)) != -1) {
                         fileOut.write(buffer, 0, bytesRead);
+                        checkBuffer = new String(buffer, 0, bytesRead);
                         // Stop writing at the boundary
-                        if (new String(buffer, 0, bytesRead).contains("--" + boundary)) {
+                        if (checkBuffer.contains("--" + boundary)) {
+                            System.out.println("checkBuffer: " + checkBuffer);
                             break;
                         }
                     } 
-                    System.out.println("WHILE ENDED");
+                    if (checkBuffer.contains("--" + boundary)) {
+                        System.out.println("checkBuffer: " + checkBuffer);
+                        break;
+                    }
+                    // System.out.println("WHILE ENDED");
                 }
-
                 uploadedFile = file;
             }
-            // System.out.println("line: " + line);
         }
-        dataInputStream.close();
 
         // Send response back to the client
         String response = "HTTP/1.1 200 OK\r\n" +
