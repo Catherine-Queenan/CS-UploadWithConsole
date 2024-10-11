@@ -22,26 +22,8 @@ public class UploadServerThread extends Thread {
             socket.close();
             return;
          }
-
-         
-
-         // Split the request line by spaces to get the HTTP method (GET or POST)
-         String[] requestParts = requestLine.split(" ");
-         String method = requestParts[0]; // This will be "GET" or "POST"
-         for(int i = 0; i < requestParts.length; i++){
-            System.out.println(requestParts[i]);
-         }
-         
-         String line;
-         int contentLength = -1;
-         while (!(line = reader.readLine()).isEmpty()) {
-            System.out.println(line);
-            if (line.startsWith("Content-Length: ")) {
-                contentLength = Integer.parseInt(line.substring(16).trim());
-            }
-         }
-        
-        HttpServletRequest req = new HttpServletRequest(in, contentLength); 
+    
+         HttpServletRequest req = new HttpServletRequest(reader, socket.getOutputStream(), in); 
          // Set up the response output stream
          OutputStream baos = new ByteArrayOutputStream();
          HttpServletResponse res = new HttpServletResponse(baos);
@@ -50,10 +32,10 @@ public class UploadServerThread extends Thread {
          HttpServlet servlet = new UploadServlet();
 
          // Call the appropriate method based on the request type
-         if ("GET".equalsIgnoreCase(method)) {
+         if (requestLine.startsWith("GET")) {
             // Simulate HttpServletRequest for GET
             servlet.doGet(req, res);
-         } else if ("POST".equalsIgnoreCase(method)) {
+         } else if (requestLine.startsWith("POST")) {
             // Simulate HttpServletRequest for POST
             servlet.doPost(req, res);
          }

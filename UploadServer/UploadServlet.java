@@ -5,13 +5,16 @@ import java.util.Arrays;
 public class UploadServlet extends HttpServlet {
 
    /**
-    * Using reflection to dynamically access the GET or POST method of the servlet while
+    * Using reflection to dynamically access the GET or POST method of the servlet
+    * while
     * printing updates on progress to the output stream.
     */
-   public void handleRequest(String methodName, HttpServletRequest request, HttpServletResponse response) throws ServletNotFoundException, MethodNotFoundException {
+   public void handleRequest(String methodName, HttpServletRequest request, HttpServletResponse response)
+         throws ServletNotFoundException, MethodNotFoundException {
       // Initialize PrintWriter to send response
       try (PrintWriter out = response.getWriter()) {
-         // Logging to signify loading of the method and instantiation of the servlet instance dynamically
+         // Logging to signify loading of the method and instantiation of the servlet
+         // instance dynamically
          out.println("Loading 'UploadServlet' class dynamically...");
          // Load the servlet class dynamically
          Class<?> servletClass = Class.forName("UploadServlet");
@@ -19,9 +22,12 @@ public class UploadServlet extends HttpServlet {
          Object servletInstance;
          try {
             servletInstance = servletClass.getDeclaredConstructor().newInstance();
-         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-            // Throwing a custom unchecked exception for instantiation errors (based on the suggested initial exceptions)
-            throw new ServletInvocationException("An error occurred while instantiating the servlet class 'UploadServlet'.", e);
+         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+               | InvocationTargetException e) {
+            // Throwing a custom unchecked exception for instantiation errors (based on the
+            // suggested initial exceptions)
+            throw new ServletInvocationException(
+                  "An error occurred while instantiating the servlet class 'UploadServlet'.", e);
          }
 
          // Using reflection to invoke the GET or POST method
@@ -42,7 +48,7 @@ public class UploadServlet extends HttpServlet {
 
          // Sending the response
          out.flush();
-      // Using the custom exceptions to handle errors
+         // Using the custom exceptions to handle errors
       } catch (ClassNotFoundException e) {
          // Throwing a custom exceptoion for class not found
          throw new ServletNotFoundException("The requested servlet class 'UploadServlet' could not be found.", e);
@@ -50,7 +56,8 @@ public class UploadServlet extends HttpServlet {
          // Throwing a custom exception for method not found
          throw new MethodNotFoundException("The requested method '" + methodName + "' could not be found.", e);
       } catch (IllegalAccessException | InvocationTargetException e) {
-         // Throwing a custom unchecked exception for invocation errors (based on the suggested initial exceptions)
+         // Throwing a custom unchecked exception for invocation errors (based on the
+         // suggested initial exceptions)
          throw new ServletInvocationException("An error occurred while invoking the method '" + methodName + "'.", e);
       } catch (Exception e) {
          e.printStackTrace();
@@ -90,40 +97,97 @@ public class UploadServlet extends HttpServlet {
    @Override
    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
       try {
-         InputStream in = request.getInputStream();
-         int contentLength = request.getContentLength();
+         InputStream inputStream = request.getInputStream();
+         BufferedReader in = request.getBufferedIn();
+         OutputStream out = request.getOutputStream();
 
-         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-
-         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-         byte[] content = new byte[4]; // Buffer size
-
-
-         int bytesRead;
-         int totalBytesRead = 0;      
-   
-         while (totalBytesRead < contentLength && (bytesRead = in.read(content)) != -1) {
-            String line = new String(content);  
-            System.out.println(line); 
-
-            baos.write(content, 0, bytesRead);
-         
-            totalBytesRead += bytesRead;
+         File uploadDir = new File("uploads");
+         if (!uploadDir.exists()) {
+            uploadDir.mkdir();
+         }
+         // Extract boundary from the content-type header
+         String boundary = "";
+         String line;
+         while (!(line = in.readLine()).isEmpty()) {
+            if (line.startsWith("Content-Type: multipart/form-data")) {
+               // Extract the boundary
+               int boundaryIndex = line.indexOf("boundary=");
+               if (boundaryIndex != -1) {
+                  boundary = line.substring(boundaryIndex + 9);
+               }
+            }
          }
 
-         // Save uploaded file with a timestamped name
-         long timestamp = System.currentTimeMillis();
-         System.out.println(timestamp);
-         FileOutputStream fos = new FileOutputStream(new File(timestamp + ".txt"));
-         baos.writeTo(fos);
-         fos.close();
+         if (boundary.isEmpty()) {
+            System.out.println("No boundary found in the request.");
+            return;
+         }
 
-         // Send response showing the list of files in the directory
-         response.setContentType("text/html");
-         PrintWriter out = response.getWriter();
-         String header = "<!Doctype html><html><head><title>Uploaded Files</title></head><body><ul>";
-         String footer = "</ul></body></html>";
-         out.println(header + getFilesList() + footer);
+         // Parse multipart form data
+         String caption = null;
+         String date = null;
+         File uploadedFile = null;
+
+         String fileName = null;
+
+         DataInputStream dataInputStream = new DataInputStream(inputStream);
+         while (!(line = in.readLine()).contains("--" + boundary + "--")) {
+            // System.out.println("line: "+line);
+            // Read until boundary
+            if (line.contains("Content-Disposition: form-data; name=\"caption\"")) {
+               in.readLine(); // skip Content-Type or empty line
+               caption = in.readLine(); // extract caption
+               System.out.println("caption: " + caption);
+            } else if (line.contains("Content-Disposition: form-data; name=\"date\"")) {
+               in.readLine(); // skip Content-Type or empty line
+               date = in.readLine(); // extract date
+               System.out.println("date: " + date);
+            } else if (line.contains("Content-Disposition: form-data; name=\"fileName\"; filename=\"")) {
+               // Extract file name from the line
+               fileName = line.substring(line.indexOf("filename=\"") + 10, line.length() - 1);
+               System.out.println("File name received: " + fileName);
+
+               // Skip headers
+               in.readLine(); // skip Content-Type header
+               in.readLine(); // skip empty line
+
+               // Read file content and save it
+               String fileSaveName = caption + "_" + date + "_" + fileName;
+               File file = new File(uploadDir, fileSaveName);
+               try (FileOutputStream fileOut = new FileOutputStream(file)) {
+                  byte[] buffer = new byte[1024];
+                  int bytesRead;
+                  String checkBuffer = "";
+                  while ((bytesRead = dataInputStream.read(buffer)) != -1) {
+                     fileOut.write(buffer, 0, bytesRead);
+                     checkBuffer = new String(buffer, 0, bytesRead);
+                     // Stop writing at the boundary
+                     if (checkBuffer.contains("--" + boundary)) {
+                        uploadedFile = file;
+                        break;
+                     }
+                  }
+                  if (checkBuffer.contains("--" + boundary)) {
+                     uploadedFile = file;
+                     break;
+                  }
+                  uploadedFile = file;
+               }
+            }
+         }
+
+         System.out.println("uploadedFile " + uploadedFile);
+
+         // Send response back to the client
+         String responseHeader = "HTTP/1.1 200 OK\r\n" +
+               "Content-Type: text/html\r\n" +
+               "\r\n" +
+               "<html><body><h2>File uploaded successfully!</h2><br>" +
+               "File saved as: " + (uploadedFile != null ? uploadedFile.getName() : "No file uploaded") +
+               "<br>Caption: " + caption + "<br>Date: " + date +
+               "</body></html>";
+
+         out.write(responseHeader.getBytes());
          out.flush();
 
       } catch (Exception ex) {
@@ -136,7 +200,7 @@ public class UploadServlet extends HttpServlet {
       StringBuilder filesList = new StringBuilder();
       File dir = new File(".");
       String[] files = dir.list();
-      
+
       if (files != null) {
          Arrays.sort(files);
          for (String file : files) {
