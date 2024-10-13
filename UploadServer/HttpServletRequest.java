@@ -1,16 +1,12 @@
 import java.io.*;
 public class HttpServletRequest {
    private InputStream inputStream = null;
-   private BufferedReader in = null;
-   private OutputStream outputStream = null;
-   public HttpServletRequest(BufferedReader in, InputStream inputStream) {
+   private String boundary = null;
+   public HttpServletRequest(InputStream inputStream, String boundary) {
       this.inputStream = inputStream; 
-      this.in = in;
-      this.outputStream = outputStream;
+      this.boundary = boundary;
    }
    
    public InputStream getInputStream() {return inputStream;}
-   public BufferedReader getBufferedIn() {return in;}
-   public OutputStream getOutputStream() {return outputStream;}
-
+   public String getBoundary() {return boundary;}
 }
