@@ -12,37 +12,54 @@ public class UploadServlet extends HttpServlet {
     * while
     * printing updates on progress to the output stream.
     */
-   public void handleRequest(String methodName, HttpServletRequest request, HttpServletResponse response)
-         throws ServletNotFoundException, MethodNotFoundException {
-            try (PrintWriter out = response.getWriter()) {
-               out.println("Loading 'UploadServlet' class dynamically...");
-   
-               // Load the servlet class dynamically
-               Class<?> servletClass = Class.forName("UploadServlet");
-               Object servletInstance = servletClass.getDeclaredConstructor().newInstance();
-   
-               // Reflectively determine the method to call (GET or POST)
-               Method method = servletClass.getDeclaredMethod(methodName.equalsIgnoreCase("get") ? "doGet" : "doPost", HttpServletRequest.class, HttpServletResponse.class);
-   
-               out.println("Invoking method '" + methodName + "' dynamically...");
-               method.invoke(servletInstance, request, response);
-   
-               out.flush();
-         // Using the custom exceptions to handle errors
-      } catch (ClassNotFoundException e) {
-         // Throwing a custom exceptoion for class not found
-         throw new ServletNotFoundException("The requested servlet class 'UploadServlet' could not be found.", e);
-      } catch (NoSuchMethodException e) {
-         // Throwing a custom exception for method not found
-         throw new MethodNotFoundException("The requested method '" + methodName + "' could not be found.", e);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-         // Throwing a custom unchecked exception for invocation errors (based on the
-         // suggested initial exceptions)
-         throw new ServletInvocationException("An error occurred while invoking the method '" + methodName + "'.", e);
-      } catch (Exception e) {
-         e.printStackTrace();
-      }
-   }
+    public void handleRequest(String methodName, HttpServletRequest request, HttpServletResponse response) 
+        throws ServletNotFoundException, MethodNotFoundException {
+        try (PrintWriter out = response.getWriter()) {
+            out.println("Loading 'UploadServlet' class dynamically...");
+            System.out.println("Loading 'UploadServlet' class dynamically...");
+
+            // Load the servlet class dynamically
+            Class<?> servletClass = Class.forName("UploadServlet");
+            out.println("Class 'UploadServlet' loaded successfully: " + servletClass.getName());
+            System.out.println("Class 'UploadServlet' loaded successfully: " + servletClass.getName());
+
+            // Create an instance of the servlet class
+            Object servletInstance = servletClass.getDeclaredConstructor().newInstance();
+            out.println("Instance of 'UploadServlet' created successfully.");
+            System.out.println("Instance of 'UploadServlet' created successfully.");
+
+            // Reflectively determine the method to call (GET or POST)
+            String methodToInvoke = methodName.equalsIgnoreCase("get") ? "doGet" : "doPost";
+            Method method = servletClass.getDeclaredMethod(methodToInvoke, HttpServletRequest.class, HttpServletResponse.class);
+            out.println("Method '" + methodToInvoke + "' determined successfully.");
+            System.out.println("Method '" + methodToInvoke + "' determined successfully.");
+
+            // Invoke the method dynamically
+            out.println("Invoking method '" + methodToInvoke + "' dynamically with parameters:");
+            out.println("Request: " + request);
+            out.println("Response: " + response);
+            System.out.println("Invoking method '" + methodToInvoke + "' dynamically with parameters:");
+            System.out.println("Request: " + request);
+            System.out.println("Response: " + response);
+
+            method.invoke(servletInstance, request, response);
+            out.println("Method '" + methodToInvoke + "' invoked successfully.");
+            System.out.println("Method '" + methodToInvoke + "' invoked successfully.");
+            out.flush();
+        } catch (ClassNotFoundException e) {
+            System.err.println("Error: The requested servlet class 'UploadServlet' could not be found.");
+            throw new ServletNotFoundException("The requested servlet class 'UploadServlet' could not be found.", e);
+        } catch (NoSuchMethodException e) {
+            System.err.println("Error: The requested method '" + methodName + "' could not be found.");
+            throw new MethodNotFoundException("The requested method '" + methodName + "' could not be found.", e);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            System.err.println("Error: An error occurred while invoking the method '" + methodName + "'.");
+            throw new ServletInvocationException("An error occurred while invoking the method '" + methodName + "'.", e);
+        } catch (Exception e) {
+            System.err.println("Error: An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace(); // For debugging purposes
+        }
+    }
 
    // Handle GET request to serve the HTML form
    @Override
@@ -53,6 +70,8 @@ public class UploadServlet extends HttpServlet {
 
          // Get the PrintWriter to send the HTML response
          PrintWriter out = response.getWriter();
+
+         //handleRequest("get", request, response);
 
          // HTML form with file upload
          out.println("<html><body>");
@@ -78,6 +97,8 @@ public class UploadServlet extends HttpServlet {
    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
       try {
          InputStream inputStream = request.getInputStream();
+
+         //handleRequest("post", request, response);
 
          File uploadDir = new File("uploads");
          if (!uploadDir.exists()) {
