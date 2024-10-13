@@ -2,6 +2,8 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UploadServlet extends HttpServlet {
 
@@ -99,96 +101,135 @@ public class UploadServlet extends HttpServlet {
    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
       try {
          InputStream inputStream = request.getInputStream();
-         BufferedReader in = request.getBufferedIn();
 
          File uploadDir = new File("uploads");
          if (!uploadDir.exists()) {
             uploadDir.mkdir();
          }
          // Extract boundary from the content-type header
-         String boundary = "";
-         String line;
-         while (!(line = in.readLine()).isEmpty()) {
-            if (line.startsWith("Content-Type: multipart/form-data")) {
-               // Extract the boundary
-               int boundaryIndex = line.indexOf("boundary=");
-               if (boundaryIndex != -1) {
-                  boundary = line.substring(boundaryIndex + 9);
-               }
-            }
-         }
+         String boundary = request.getBoundary();
 
-         if (boundary.isEmpty()) {
+         if (boundary == null) {
             System.out.println("No boundary found in the request.");
             return;
          }
 
-         // Parse multipart form data
-         String caption = null;
-         String date = null;
-         File uploadedFile = null;
+         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         byte[] buffer = new byte[1024];
+         int bytesRead;
+         String input = "";
 
-         String fileName = null;
+         while (!input.contains("--" + boundary + "--") && ((bytesRead = inputStream.read(buffer)) != -1)) {
+            baos.write(buffer, 0, bytesRead);
+            input = baos.toString(StandardCharsets.UTF_8);
+         }
+         byte[] inputData = baos.toByteArray();
+         String regex = "--" + boundary;
+         String[] formParts = input.split(regex);
 
-         DataInputStream dataInputStream = new DataInputStream(inputStream);
-         while (!(line = in.readLine()).contains("--" + boundary + "--")) {
-            // System.out.println("line: "+line);
-            // Read until boundary
-            if (line.contains("Content-Disposition: form-data; name=\"caption\"")) {
-               in.readLine(); // skip Content-Type or empty line
-               caption = in.readLine(); // extract caption
-               System.out.println("caption: " + caption);
-            } else if (line.contains("Content-Disposition: form-data; name=\"date\"")) {
-               in.readLine(); // skip Content-Type or empty line
-               date = in.readLine(); // extract date
-               System.out.println("date: " + date);
-            } else if (line.contains("Content-Disposition: form-data; name=\"fileName\"; filename=\"")) {
-               // Extract file name from the line
-               fileName = line.substring(line.indexOf("filename=\"") + 10, line.length() - 1);
-               System.out.println("File name received: " + fileName);
+         Map<String, String> formInputs = new HashMap<>();
+         byte file[] = null;
 
-               // Skip headers
-               line = in.readLine(); // skip Content-Type header
-               System.out.println(line);
-               line = in.readLine(); // skip empty line
-               System.out.println(line);
-               System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+         int offset = 0;
+         for (String part : formParts) {
+            if (part.contains("Content-Disposition: form-data; name=\"caption\"")) {
+               String caption = part.split("\r\n\r\n")[1].trim();
+               formInputs.put("caption", caption);
 
-               // Read file content and save it
-               String fileSaveName = caption + "_" + date + "_" + fileName;
-               File file = new File(uploadDir, fileSaveName);
-               try (OutputStream fileOut = new BufferedOutputStream(new FileOutputStream(file))) {
-                  byte[] buffer = new byte[1024];
-                  int bytesRead;
-                  
-                  ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                  StringBuilder checkBuffer = new StringBuilder();
+            } else if (part.contains("Content-Disposition: form-data; name=\"date\"")) {
+               String date = part.split("\r\n\r\n")[1].trim();
+               formInputs.put("date", date);
 
-                  String currentContent = "";
-                  while ((bytesRead = dataInputStream.read(buffer)) != -1) {
-                     // fileOut.write(buffer, 0, bytesRead);
-                     
-                     baos.write(buffer, 0, bytesRead);
+            } else if (part.contains("Content-Disposition: form-data; name=\"fileName\"; filename=\"")) {
+               String filename = part.split("filename=\"")[1].split("\"")[0];
+               formInputs.put("filename", filename);
 
-                     byte[] allBytes = baos.toByteArray();
-                     currentContent = new String(allBytes, 0, allBytes.length, StandardCharsets.ISO_8859_1);
-                     if (currentContent.contains("--" + boundary + "--")) {
-                        // Find the position of the boundary
-                        int boundaryIndex = currentContent.indexOf("\r\n--" + boundary + "--");
-                        // Write only up to the boundary
-                        fileOut.write(allBytes, 0, boundaryIndex);
-                        break;
-                     } 
-                  }
-                  if (currentContent.contains("--" + boundary + "--")) {
-                     uploadedFile = file;
-                     break;
-                  }
-               }
+               int fileDataStart = part.indexOf("\r\n\r\n") + 4;
+               int fileDataEnd = input.indexOf("--" + boundary + "--");
+
+               int headerBytes = input.substring(0, offset + fileDataStart).getBytes(StandardCharsets.UTF_8).length;
+               file = Arrays.copyOfRange(inputData, headerBytes, fileDataEnd);
             }
+            offset += part.length() + regex.getBytes().length;
          }
 
-         System.out.println("uploadedFile " + uploadedFile);
+         String fileName = formInputs.get("caption") + "_" + formInputs.get("date") + "_" + formInputs.get("filename");
+         System.out.println(fileName);
+
+         File filePath = new File(uploadDir, fileName);
+         try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
+            fileOut.write(file);
+
+         } catch (IOException e){
+            e.printStackTrace();
+         }
+
+
+
+         // Parse multipart form data
+         // String caption = null;
+         // String date = null;
+         // File uploadedFile = null;
+
+         // String fileName = null;
+
+         // while (!(line = in.readLine()).contains("--" + boundary + "--")) {
+         // // System.out.println("line: "+line);
+         // // Read until boundary
+         // if (line.contains("Content-Disposition: form-data; name=\"caption\"")) {
+         // in.readLine(); // skip Content-Type or empty line
+         // caption = in.readLine(); // extract caption
+         // System.out.println("caption: " + caption);
+         // } else if (line.contains("Content-Disposition: form-data; name=\"date\"")) {
+         // in.readLine(); // skip Content-Type or empty line
+         // date = in.readLine(); // extract date
+         // System.out.println("date: " + date);
+         // } else if (line.contains("Content-Disposition: form-data; name=\"fileName\";
+         // filename=\"")) {
+         // // Extract file name from the line
+         // fileName = line.substring(line.indexOf("filename=\"") + 10, line.length() -
+         // 1);
+         // System.out.println("File name received: " + fileName);
+
+         // // Skip headers
+         // line = in.readLine(); // skip Content-Type header
+         // System.out.println(line);
+         // line = in.readLine(); // skip empty line
+         // System.out.println(line);
+         // System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+
+         // // Read file content and save it
+         // String fileSaveName = caption + "_" + date + "_" + fileName;
+         // // File file = new File(uploadDir, fileSaveName);
+
+         // // try (FileOutputStream fileOut = new FileOutputStream(file)) {
+         // // byte[] buffer = new byte[1024];
+         // // int bytesRead;
+
+         // // ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         // // boolean boundaryFound = false;
+
+         // // while ((bytesRead = inputStream.read(buffer)) != -1) {
+         // // // fileOut.write(buffer, 0, bytesRead);
+
+         // // baos.write(buffer, 0, bytesRead);
+         // // String accumulatedData = baos.toString("ISO-8859-1");
+         // // int boundaryIndex = accumulatedData.indexOf("--" + boundary + "--");
+         // // if (boundaryIndex != -1) {
+
+         // // fileOut.write(baos.toByteArray(), 0, boundaryIndex);
+         // // boundaryFound = true;
+         // // break;
+         // // }
+         // // }
+
+         // if (handleFileUpload(inputStream, uploadDir, boundary, fileSaveName)) {
+         // break;
+         // }
+         // }
+         // }
+
+         // System.out.println("uploadedFile " + file);
 
          // Send response back to the client
          response.setContentType("text/html");
@@ -201,6 +242,53 @@ public class UploadServlet extends HttpServlet {
       } catch (Exception ex) {
          ex.printStackTrace();
       }
+   }
+
+   private boolean handleFileUpload(InputStream inputStream, File uploadDir, String boundary, String filename) {
+      // Create a File object to save the uploaded file
+      File file = new File("uploads", filename); // Change this to your desired filename
+
+      try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();) {
+         // InputStream inputStream = req.getInputStream()) { // Use InputStream from
+         // socket
+
+         byte[] buffer = new byte[1024];
+         int bytesRead;
+
+         boolean boundaryFound = false;
+
+         // Read data from the input stream
+         while ((bytesRead = inputStream.read(buffer)) != -1) {
+            // Write bytes to ByteArrayOutputStream for processing
+            byteArrayOutputStream.write(buffer, 0, bytesRead);
+
+            // Convert accumulated bytes to string to check for boundary
+            String accumulatedData = byteArrayOutputStream.toString("ISO-8859-1");
+
+            // Check for the boundary
+            int boundaryIndex = accumulatedData.indexOf("--" + boundary + "--");
+            if (boundaryIndex != -1) {
+               // Write only up to the boundary
+               byte[] bytes = byteArrayOutputStream.toByteArray();
+               try (FileOutputStream fileOut = new FileOutputStream(file)) {
+                  fileOut.write(bytes, 0, boundaryIndex);
+               }
+
+               boundaryFound = true;
+               break; // Exit loop after finding boundary
+            }
+         }
+
+         if (boundaryFound) {
+            System.out.println("File uploaded successfully: " + file.getAbsolutePath());
+         } else {
+            System.out.println("Boundary not found. File may be incomplete.");
+         }
+
+      } catch (IOException e) {
+         e.printStackTrace(); // Handle exceptions appropriately
+      }
+      return true;
    }
 
    // Helper method to get the list of files in the directory

@@ -22,8 +22,20 @@ public class UploadServerThread extends Thread {
             socket.close();
             return;
          }
+
+         String method = requestLine;
+         String boundary = null;
+         while (!(requestLine = reader.readLine()).isEmpty()) {
+            if (requestLine.startsWith("Content-Type: multipart/form-data")) {
+               // Extract the boundary
+               int boundaryIndex = requestLine.indexOf("boundary=");
+               if (boundaryIndex != -1) {
+                  boundary = requestLine.substring(boundaryIndex + 9);
+               }
+            }
+         }
     
-         HttpServletRequest req = new HttpServletRequest(reader, in); 
+         HttpServletRequest req = new HttpServletRequest(in, boundary); 
          // Set up the response output stream
          OutputStream baos = new ByteArrayOutputStream();
          HttpServletResponse res = new HttpServletResponse(baos);
@@ -32,10 +44,10 @@ public class UploadServerThread extends Thread {
          HttpServlet servlet = new UploadServlet();
 
          // Call the appropriate method based on the request type
-         if (requestLine.startsWith("GET")) {
+         if (method.startsWith("GET")) {
             // Simulate HttpServletRequest for GET
             servlet.doGet(req, res);
-         } else if (requestLine.startsWith("POST")) {
+         } else if (method.startsWith("POST")) {
             // Simulate HttpServletRequest for POST
             servlet.doPost(req, res);
          }
@@ -49,4 +61,5 @@ public class UploadServerThread extends Thread {
             e.printStackTrace();
       }
    }
+   
 }
