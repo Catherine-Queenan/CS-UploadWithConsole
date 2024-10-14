@@ -1,8 +1,8 @@
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
-import java.time.LocalDate;
 import java.nio.file.Files;
+import java.time.LocalDate;
+import java.util.Scanner;
 
 
 public class UploadClient {
@@ -11,6 +11,12 @@ public class UploadClient {
     public String uploadFile() {
         String listing = "";
         Scanner scanner = new Scanner(System.in);
+        // Clear the input buffer (if necessary)
+        if (scanner.hasNextLine()) {
+            scanner.nextLine();
+            System.out.println("AAAAAAAAA");
+        }
+
         System.out.println("Enter a caption for the image: ");
         String caption = scanner.nextLine();
         System.out.println("Enter the file path: ");
@@ -20,7 +26,7 @@ public class UploadClient {
         String date = LocalDate.now().toString();
 
         try {
-            Socket socket = new Socket("localhost", 8081);
+            Socket socket = new Socket("localhost", 8082);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             OutputStream out = socket.getOutputStream();
 

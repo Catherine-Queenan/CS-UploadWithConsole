@@ -12,7 +12,7 @@ public class ReflectionTest {
                     "Content-Disposition: form-data; name=\"date\"\r\n\r\n" +
                     "2024-01-01\r\n" +
                     "--boundary\r\n" +
-                    "Content-Disposition: form-data; name=\"fileName\"; filename=\"test.txt\"\r\n" +
+                    "Content-Disposition: form-data; name=\"File\"; filename=\"test.txt\"\r\n" +
                     "Content-Type: text/plain\r\n\r\n" +
                     "This is some test content for the file upload.\r\n" +
                     "--boundary--\r\n"; // Simulated form data with file
