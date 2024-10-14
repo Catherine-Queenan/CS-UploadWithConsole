@@ -121,6 +121,7 @@ public class UploadServlet extends HttpServlet {
             baos.write(buffer, 0, bytesRead);
             input = baos.toString(StandardCharsets.UTF_8);
          }
+
          byte[] inputData = baos.toByteArray();
          String regex = "--" + boundary;
          String[] formParts = input.split(regex);

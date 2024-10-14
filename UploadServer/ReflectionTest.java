@@ -6,10 +6,16 @@ public class ReflectionTest {
         try {
             // Simulating HttpServletRequest with dummy InputStream
             String requestData = "--boundary\r\n" +
-                                 "Content-Disposition: form-data; name=\"file\"; filename=\"test.txt\"\r\n" +
-                                 "Content-Type: text/plain\r\n\r\n" +
-                                 "This is some test content for the file upload.\r\n" +
-                                 "--boundary--\r\n"; // Simulated form data with file
+                    "Content-Disposition: form-data; name=\"caption\"\r\n\r\n" +
+                    "Test\r\n" +
+                    "--boundary\r\n" +
+                    "Content-Disposition: form-data; name=\"date\"\r\n\r\n" +
+                    "2024-01-01\r\n" +
+                    "--boundary\r\n" +
+                    "Content-Disposition: form-data; name=\"fileName\"; filename=\"test.txt\"\r\n" +
+                    "Content-Type: text/plain\r\n\r\n" +
+                    "This is some test content for the file upload.\r\n" +
+                    "--boundary--\r\n"; // Simulated form data with file
 
             InputStream inputStream = new ByteArrayInputStream(requestData.getBytes());
             String boundary = "boundary"; // Set the same boundary used in requestData
@@ -23,7 +29,7 @@ public class ReflectionTest {
             ReflectionTest handler = new ReflectionTest();
 
             // Array of method names to test
-            String[] methodNames = {"get", "post"}; // Testing both GET and POST
+            String[] methodNames = { "get", "post" }; // Testing both GET and POST
 
             // Loop through method names and call handleRequest for each
             for (String methodName : methodNames) {
@@ -49,8 +55,8 @@ public class ReflectionTest {
      * Using reflection to dynamically access the GET or POST method of the servlet
      * while printing updates on progress to the output stream.
      */
-    public void handleRequest(String methodName, HttpServletRequest request, HttpServletResponse response) 
-        throws ServletNotFoundException, MethodNotFoundException {
+    public void handleRequest(String methodName, HttpServletRequest request, HttpServletResponse response)
+            throws ServletNotFoundException, MethodNotFoundException {
         try (PrintWriter out = response.getWriter()) {
             out.println("Loading 'UploadServlet' class dynamically...");
             System.out.println("Loading 'UploadServlet' class dynamically...");
@@ -67,7 +73,8 @@ public class ReflectionTest {
 
             // Reflectively determine the method to call (GET or POST)
             String methodToInvoke = methodName.equalsIgnoreCase("get") ? "doGet" : "doPost";
-            Method method = servletClass.getDeclaredMethod(methodToInvoke, HttpServletRequest.class, HttpServletResponse.class);
+            Method method = servletClass.getDeclaredMethod(methodToInvoke, HttpServletRequest.class,
+                    HttpServletResponse.class);
             out.println("Method '" + methodToInvoke + "' determined successfully.");
             System.out.println("Method '" + methodToInvoke + "' determined successfully.");
 
