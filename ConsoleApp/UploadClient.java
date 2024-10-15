@@ -11,16 +11,12 @@ public class UploadClient {
     public String uploadFile() {
         String listing = "";
         Scanner scanner = new Scanner(System.in);
-        // Clear the input buffer (if necessary)
-        if (scanner.hasNextLine()) {
-            scanner.nextLine();
-            System.out.println("AAAAAAAAA");
-        }
 
         System.out.println("Enter a caption for the image: ");
         String caption = scanner.nextLine();
         System.out.println("Enter the file path: ");
         String filePath = scanner.nextLine();
+        scanner.close();
 
         //Get current Date
         String date = LocalDate.now().toString();
@@ -75,6 +71,7 @@ public class UploadClient {
             // Send Header
             out.write(request.getBytes());
             // Send Body
+            System.out.println(body);
             out.write(body.toString().getBytes());
             // Send File
             out.write(fileBytes);
